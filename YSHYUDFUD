@@ -1,0 +1,276 @@
+local WindUI = loadstring(game:HttpGet("https://pastefy.app/Yx60XIXc/raw"))()
+
+getgenv().MysteryHub = getgenv().MysteryHub or {}
+local MH = getgenv().MysteryHub
+
+MH.S = {
+    RS = game:GetService("ReplicatedStorage"),
+    TP = game:GetService("TeleportService"),
+    HTTP = game:GetService("HttpService"),
+    Run = game:GetService("RunService"),
+    UIS = game:GetService("UserInputService"),
+    Players = game:GetService("Players"),
+    Lighting = game:GetService("Lighting"),
+    VirtualUser = game:GetService("VirtualUser"),
+    Stats = game:GetService("Stats"),
+    VIM = game:GetService("VirtualInputManager"),
+}
+
+MH.S.LP = MH.S.Players.LocalPlayer
+MH.S.Camera = workspace.CurrentCamera
+MH.S.JobId = game.JobId
+MH.S.PlaceId = game.PlaceId
+
+MH.S.LP.Idled:Connect(function()
+    MH.S.VirtualUser:CaptureController()
+    MH.S.VirtualUser:ClickButton2(Vector2.new())
+end)
+
+MH.V = MH.V or {
+    ScriptName = "Mystery Hub",
+    ScriptVersion = "v1.0.0",
+    Discord = "https://discord.gg/TU-LINK",
+    FPS = 0,
+    Ping = 0,
+}
+MH.D = MH.D or {}
+MH.St = MH.St or {}
+MH.H = MH.H or {}
+
+
+MH.R = MH.R or {}
+
+local H = MH.H
+
+H.Copy = function(text)
+    if setclipboard then
+        setclipboard(text)
+        return true
+    elseif toclipboard then
+        toclipboard(text)
+        return true
+    end
+
+    return false
+end
+
+H.GetPing = function()
+    local ok, ping = pcall(function()
+        return S.Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+    end)
+
+    if ok and ping then
+        return math.floor(ping)
+    end
+
+    return 0
+end
+
+H.GetAccountAge = function()
+    return S.LP.AccountAge .. " days"
+end
+
+H.GetExecutor = function()
+    if identifyexecutor then
+        return identifyexecutor()
+    end
+
+    return "Unknown"
+end
+
+task.spawn(function()
+    local frames = 0
+    local last = tick()
+
+    S.Run.RenderStepped:Connect(function()
+        frames += 1
+
+        if tick() - last >= 1 then
+            V.FPS = frames
+            V.Ping = H.GetPing()
+
+            frames = 0
+            last = tick()
+        end
+    end)
+end)
+
+local S = MH.S
+local V = MH.V
+local D = MH.D
+local St = MH.St
+local R = MH.R
+
+S.LP.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid")
+    task.wait(0.3)
+end)
+
+R.Window = WindUI:CreateWindow({
+    Title = "Mystery Hub - Muscle Legends",
+    Icon = "gem",
+    Author = "Made By Sherya",
+    Folder = "MyHub",
+    Size = UDim2.fromOffset(600, 470),
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    ToggleKey = Enum.KeyCode.LeftShift,
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Callback = function() end,
+    },
+})
+
+R.Window:EditOpenButton({
+    Title = "Open Mystery Hub",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(
+        Color3.fromHex("#000000"),
+        Color3.fromHex("#000000")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+})
+
+R.DashBoard = R.Window:Section({ Title = "DashBoard", Opened = true })
+R.Home = R.DashBoard:Tab({ Title = "Home", Icon = "house", Locked = false })
+
+R.Home:Section({
+    Title = "Account Info",
+    Box = false,
+    TextTransparency = 0.05,
+    TextXAlignment = "Left",
+    TextSize = 22,
+})
+
+R.Home:Paragraph({
+    Title = "Player",
+    Desc = "Username: " .. S.LP.Name ..
+        "\nDisplay Name: " .. S.LP.DisplayName ..
+        "\nUser ID: " .. S.LP.UserId ..
+        "\nAccount Age: " .. H.GetAccountAge(),
+})
+
+R.Home:Section({
+    Title = "Performance",
+    Box = false,
+    TextTransparency = 0.05,
+    TextXAlignment = "Left",
+    TextSize = 22,
+})
+
+R.HomePerformance = R.Home:Paragraph({
+    Title = "Client Status",
+    Desc = "FPS: Loading..." ..
+        "\nPing: Loading..." ..
+        "\nExecutor: " .. H.GetExecutor(),
+})
+
+task.spawn(function()
+    while task.wait(1) do
+        if R.HomePerformance and R.HomePerformance.SetDesc then
+            R.HomePerformance:SetDesc(
+                "FPS: " .. tostring(V.FPS) ..
+                "\nPing: " .. tostring(V.Ping) .. " ms" ..
+                "\nExecutor: " .. H.GetExecutor()
+            )
+        end
+    end
+end)
+
+R.Home:Section({
+    Title = "Game Info",
+    Box = false,
+    TextTransparency = 0.05,
+    TextXAlignment = "Left",
+    TextSize = 22,
+})
+
+R.Home:Paragraph({
+    Title = "Experience",
+    Desc = "Place ID: " .. S.PlaceId ..
+        "\nJob ID: " .. S.JobId ..
+        "\nPlayers: " .. #S.Players:GetPlayers() .. "/" .. S.Players.MaxPlayers,
+})
+
+R.Home:Section({
+    Title = "Script Info",
+    Box = false,
+    TextTransparency = 0.05,
+    TextXAlignment = "Left",
+    TextSize = 22,
+})
+
+R.Home:Paragraph({
+    Title = V.ScriptName,
+    Desc = "Version: " .. V.ScriptVersion ..
+        "\nAuthor: Made By Sherya" ..
+        "\nUI Library: WindUI",
+})
+
+R.Home:Button({
+    Title = "Copy Discord",
+    Desc = "Copy Mystery Hub Discord invite",
+    Icon = "link",
+    Callback = function()
+        local copied = H.Copy(V.Discord)
+
+        if WindUI.Notify then
+            WindUI:Notify({
+                Title = copied and "Copied" or "Clipboard Error",
+                Content = copied and "Discord link copied." or "Your executor does not support clipboard.",
+                Icon = copied and "check" or "triangle-alert",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+R.Farming = R.Window:Section({ Title = "Farming", Opened = true })
+R.SimpleFarm = R.Farming:Tab({ Title = "Farm", Icon = "chess-queen", Locked = false })
+R.PacksFarm = R.Farming:Tab({ Title = "Packs", Icon = "coins", Locked = false })
+
+R.Miscellaneous = R.Window:Section({ Title = "Miscellaneous", Opened = true })
+R.Extras = R.Miscellaneous:Tab({ Title = "Universal", Icon = "folders", Locked = false })
+R.Pets = R.Miscellaneous:Tab({ Title = "Crystals", Icon = "paw-print", Locked = false })
+R.Snacks = R.Miscellaneous:Tab({ Title = "Snacks", Icon = "popcorn", Locked = false })
+R.Calculator = R.Miscellaneous:Tab({ Title = "Calculator", Icon = "calculator", Locked = false })
+
+R.Players = R.Window:Section({ Title = "Players", Opened = true })
+R.Killer = R.Players:Tab({ Title = "Killer", Icon = "skull", Locked = false })
+R.Stats = R.Players:Tab({ Title = "Stats", Icon = "users", Locked = false })
+R.Teleport = R.Players:Tab({ Title = "Teleport", Icon = "map-pin", Locked = false })
+
+R.Library = R.Window:Section({ Title = "Library", Opened = true })
+
+R.Settings = WindUI:CreateSettingsTab(R.Window, {
+    Section = R.Library,
+    Title = "Settings",
+    Icon = "settings",
+    ConfigName = "main",
+    ToggleKey = Enum.KeyCode.RightShift,
+    AutoSave = false,
+    AutoSaveInterval = 5,
+    ShowTheme = true,
+    ShowAcrylic = true,
+    ShowUIScale = true,
+    ShowKeybind = true,
+    ShowConfig = true,
+})
+
+R.AI = WindUI:AttachAI(R.Window, {
+    Name = "Taiga",
+    Provider = "groq",
+    ApiKey = "gsk_xxx",
+    Model = "llama-3.3-70b-versatile",
+    System = "You are Mystery Hub assistant. Answer shortly and help with the hub.",
+    Icon = "bot",
+    Order = 990,
+    MaxHistory = 20,
+    Ask = nil,
+})
