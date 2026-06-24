@@ -9,8 +9,6 @@ local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local JobId = game.JobId
 
-
-
 Lighting.ClockTime = 0
 Lighting.Brightness = 1
 Lighting.Ambient = Color3.fromRGB(0, 0, 0)
@@ -74,10 +72,6 @@ rainSound.Parent = rainPart
 task.spawn(function()
     while true do
         task.wait(math.random(8, 20))
-        local flash = Instance.new("PointLight")
-        flash.Color = Color3.new(1, 1, 1)
-        flash.Range = 60
-        flash.Brightness = 5
         local thunderPos = Vector3.new(math.random(-100, 100), 300, math.random(-100, 100))
         local thunderPart = Instance.new("Part")
         thunderPart.Size = Vector3.new(1, 1, 1)
@@ -86,6 +80,10 @@ task.spawn(function()
         thunderPart.Transparency = 1
         thunderPart.Position = thunderPos
         thunderPart.Parent = workspace
+        local flash = Instance.new("PointLight")
+        flash.Color = Color3.new(1, 1, 1)
+        flash.Range = 60
+        flash.Brightness = 5
         flash.Parent = thunderPart
         task.delay(0.15, function() flash:Destroy() end)
         local thunderSound = Instance.new("Sound")
@@ -111,7 +109,6 @@ TimerLabel.Size = UDim2.new(0.3, 0, 0.05, 0)
 TimerLabel.Position = UDim2.new(0.35, 0, 0.12, 0)
 TimerLabel.BackgroundTransparency = 0.3
 TimerLabel.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-TimerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 TimerLabel.Font = Enum.Font.GothamBlack
 TimerLabel.TextScaled = true
 TimerLabel.Text = "Server Hop en 90s"
@@ -122,7 +119,6 @@ KillLabel.Size = UDim2.new(0.3, 0, 0.05, 0)
 KillLabel.Position = UDim2.new(0.35, 0, 0.18, 0)
 KillLabel.BackgroundTransparency = 0.3
 KillLabel.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-KillLabel.TextColor3 = Color3.new(1, 1, 1)
 KillLabel.Font = Enum.Font.GothamBold
 KillLabel.TextScaled = true
 KillLabel.Text = "Kills: ..."
@@ -133,28 +129,25 @@ MoonLabel.Size = UDim2.new(0.3, 0, 0.05, 0)
 MoonLabel.Position = UDim2.new(0.35, 0, 0.24, 0)
 MoonLabel.BackgroundTransparency = 0.3
 MoonLabel.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-MoonLabel.TextColor3 = Color3.new(1, 1, 1)
 MoonLabel.Font = Enum.Font.GothamBlack
 MoonLabel.TextScaled = true
-MoonLabel.Text = "JxssMoon Kill"
+MoonLabel.Text = "Sherya Killer private"
 MoonLabel.Parent = ScreenGui
 
-local function rainbowify(label)
+local function purplify(label)
     task.spawn(function()
         while true do
             local t = os.clock() * 2
-            local r = math.sin(t) * 127 + 128
-            local g = math.sin(t + 2) * 127 + 128
-            local b = math.sin(t + 4) * 127 + 128
-            label.TextColor3 = Color3.fromRGB(r, g, b)
+            local val = math.sin(t) * 0.25 + 0.75
+            label.TextColor3 = Color3.fromHSV(0.75, 1, val)
             task.wait(0.05)
         end
     end)
 end
 
-rainbowify(TimerLabel)
-rainbowify(KillLabel)
-rainbowify(MoonLabel)
+purplify(TimerLabel)
+purplify(KillLabel)
+purplify(MoonLabel)
 
 task.spawn(function()
     local leaderstats = LocalPlayer:WaitForChild("leaderstats", 10)
@@ -250,7 +243,7 @@ local function autoPunch()
                 end
             end
         end
-        task.wait(0.05)
+        task.wait()
     end
 end
 
@@ -260,29 +253,26 @@ RunService.Heartbeat:Connect(function()
     if not getgenv().AutoPunchEnabled then return end
     local char = LocalPlayer.Character
     if not char then return end
-
     if not char:FindFirstChildOfClass("Tool") then
         equipPunchHand()
     end
-
     local hand = getHand()
     if hand then
         for _, target in pairs(Players:GetPlayers()) do
             if target ~= LocalPlayer and target.Character then
                 local root = target.Character:FindFirstChild("HumanoidRootPart")
                 if root and root:IsDescendantOf(Workspace) then
-                    spawn(function()
-                        for i = 1, 2 do
+                    task.spawn(function()
+                        for i = 1, 5 do
                             firetouchinterest(hand, root, 0)
                             firetouchinterest(hand, root, 1)
-                            task.wait(0.01)
+                            task.wait()
                         end
                     end)
                 end
             end
         end
     end
-
     pcall(function()
         local tool = char:FindFirstChildOfClass("Tool")
         if tool then
@@ -291,4 +281,70 @@ RunService.Heartbeat:Connect(function()
             equipPunchHand()
         end
     end)
+end)
+
+local muscleEvent = LocalPlayer:WaitForChild("muscleEvent", 10)
+local itemList = {
+    "Tropical Shake", "Energy Shake", "Protein Bar", "TOUGH Bar",
+    "Protein Shake", "ULTRA Shake", "Energy Bar"
+}
+
+local function formatEventName(itemName)
+    local parts = {}
+    for word in itemName:gmatch("%S+") do
+        table.insert(parts, word:lower())
+    end
+    for i = 2, #parts do
+        parts[i] = parts[i]:sub(1, 1):upper() .. parts[i]:sub(2)
+    end
+    return table.concat(parts)
+end
+
+local function activateAllFood()
+    if not LocalPlayer.Character then return end
+    for _, item in ipairs(itemList) do
+        local tool = LocalPlayer.Character:FindFirstChild(item) or LocalPlayer.Backpack:FindFirstChild(item)
+        if tool and muscleEvent then
+            pcall(function() muscleEvent:FireServer(formatEventName(item), tool) end)
+        end
+    end
+end
+
+getgenv().AutoEatEnabled = true
+task.spawn(function()
+    while true do
+        if getgenv().AutoEatEnabled then
+            activateAllFood()
+        end
+        task.wait(0.005)
+    end
+end)
+
+task.spawn(function()
+    for _, portal in pairs(game:GetDescendants()) do
+        if portal.Name == "RobloxForwardPortals" then
+            pcall(function() portal:Destroy() end)
+        end
+    end
+    game.DescendantAdded:Connect(function(descendant)
+        if descendant.Name == "RobloxForwardPortals" then
+            pcall(function() descendant:Destroy() end)
+        end
+    end)
+end)
+
+getgenv().AutoSpinWheel = true
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if getgenv().AutoSpinWheel then
+            pcall(function()
+                local RS = game:GetService("ReplicatedStorage")
+                RS.rEvents.openFortuneWheelRemote:InvokeServer(
+                    "openFortuneWheel",
+                    RS.fortuneWheelChances["Fortune Wheel"]
+                )
+            end)
+        end
+    end
 end)
