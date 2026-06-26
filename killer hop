@@ -166,7 +166,7 @@ local timeLeft = 90
 task.spawn(function()
     while true do
         TimerLabel.Text = "Server Hop en " .. timeLeft .. "s"
-        timeLeft -= 1
+        timeLeft = timeLeft - 1
         task.wait(1)
     end
 end)
@@ -192,11 +192,21 @@ local function ServerHop()
     end
 end
 
+local hasSpawnedOnce = false
+
 local function MonitorDeath()
     local function onCharacter(character)
+        if hasSpawnedOnce then
+            task.delay(0.5, function()
+                pcall(ServerHop)
+            end)
+        end
+        hasSpawnedOnce = true
         local humanoid = character:WaitForChild("Humanoid", 5)
         if humanoid then
-            humanoid.Died:Connect(ServerHop)
+            humanoid.Died:Connect(function()
+                pcall(ServerHop)
+            end)
         end
     end
     if LocalPlayer.Character then onCharacter(LocalPlayer.Character) end
@@ -214,7 +224,6 @@ task.spawn(function()
 end)
 
 getgenv().AutoPunchEnabled = true
-local fastHitActive = true
 
 local function equipPunchHand()
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -231,23 +240,67 @@ local function getHand()
     return char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
 end
 
-local function autoPunch()
-    while fastHitActive do
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            local punch = LocalPlayer.Backpack:FindFirstChild("Punch")
-            if punch then
-                punch.Parent = char
-                if punch:FindFirstChild("attackTime") then
-                    punch.attackTime.Value = 0
+task.spawn(function()
+    while true do
+        if getgenv().AutoPunchEnabled then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                local punch = LocalPlayer.Backpack:FindFirstChild("Punch")
+                if punch then
+                    punch.Parent = char
+                    if punch:FindFirstChild("attackTime") then
+                        punch.attackTime.Value = 0
+                    end
                 end
             end
         end
         task.wait()
     end
+end)
+
+local attackThreads = {}
+
+local function startAttackThread(target)
+    if attackThreads[target] then return end
+    attackThreads[target] = task.spawn(function()
+        while target and target.Parent do
+            if getgenv().AutoPunchEnabled and target.Character then
+                local hand = getHand()
+                local root = target.Character:FindFirstChild("HumanoidRootPart")
+                if hand and root and root:IsDescendantOf(Workspace) then
+                    for i = 1, 5 do
+                        firetouchinterest(hand, root, 0)
+                        firetouchinterest(hand, root, 1)
+                        task.wait()
+                    end
+                end
+            end
+            task.wait()
+        end
+        attackThreads[target] = nil
+    end)
 end
 
-task.spawn(autoPunch)
+local function stopAttackThread(target)
+    if attackThreads[target] then
+        task.cancel(attackThreads[target])
+        attackThreads[target] = nil
+    end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        startAttackThread(player)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    startAttackThread(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    stopAttackThread(player)
+end)
 
 RunService.Heartbeat:Connect(function()
     if not getgenv().AutoPunchEnabled then return end
@@ -256,30 +309,9 @@ RunService.Heartbeat:Connect(function()
     if not char:FindFirstChildOfClass("Tool") then
         equipPunchHand()
     end
-    local hand = getHand()
-    if hand then
-        for _, target in pairs(Players:GetPlayers()) do
-            if target ~= LocalPlayer and target.Character then
-                local root = target.Character:FindFirstChild("HumanoidRootPart")
-                if root and root:IsDescendantOf(Workspace) then
-                    task.spawn(function()
-                        for i = 1, 5 do
-                            firetouchinterest(hand, root, 0)
-                            firetouchinterest(hand, root, 1)
-                            task.wait()
-                        end
-                    end)
-                end
-            end
-        end
-    end
     pcall(function()
         local tool = char:FindFirstChildOfClass("Tool")
-        if tool then
-            tool:Activate()
-        else
-            equipPunchHand()
-        end
+        if tool then tool:Activate() end
     end)
 end)
 
